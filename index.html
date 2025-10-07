@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <title>Web Story Journey (Overlay Typewriter Effect)</title>
+  <style>
+    html, body {
+      height: 100%;
+      margin: 0; padding: 0;
+      overflow: hidden;
+      background: #fff;
+    }
+    body {
+      width: 100vw; height: 100vh;
+      position: relative;
+      font-family: 'Sarabun', sans-serif;
+    }
+    .hidden { display: none !important; }
+    #start-btn {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 10;
+      font-size: 2em;
+      padding: 18px 60px;
+      border: none;
+      border-radius: 30px;
+      background: #222;
+      color: #fff;
+      cursor: pointer;
+      letter-spacing: 2px;
+      box-shadow: 0 2px 16px rgba(0,0,0,0.2);
+      transition: opacity 0.3s;
+    }
+    #overlay-message {
+      position: absolute;
+      left: 50%; top: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 3;
+      font-size: 2em;
+      color: #fff;
+      background: rgba(30,30,30,0.75);
+      padding: 1.6em 2em;
+      border-radius: 1em;
+      text-align: center;
+      box-shadow: 0 2px 16px #0008;
+      opacity: 0;
+      transition: opacity 0.6s;
+      pointer-events: none;
+      max-width: 90vw;
+      min-width: 240px;
+    }
+    #overlay-message.visible {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .story-btn {
+      display: inline-block;
+      margin-top: 2em;
+      font-size: 1em;
+      background: #fff;
+      color: #1976d2;
+      border: none;
+      border-radius: 28px;
+      padding: 16px 36px;
+      cursor: pointer;
+      box-shadow: 0 2px 8px #0004;
+      transition: background 0.2s, color 0.2s;
+      min-width: 210px;
+    }
+    .story-btn:hover { background: #1976d2; color: #fff; }
+    /* === Letter Box (v7 style) === */
+    .letter-paragraph-box {
+      position: relative;
+      background: #f8f9fa;
+      border-radius: 24px;
+      padding: 22px 28px 32px 28px;
+      box-shadow: 0 2px 10px #0001;
+      font-size: 1.16em;
+      margin-bottom: 2.5em;
+      border: 1.8px solid #bbb;
+      min-width: 220px;
+      max-width: 95vw;
+      box-sizing: border-box;
+      display: inline-block;
+      transition: box-shadow 0.2s, border 0.2s;
+    }
+    .letter-paragraph-box:focus-within,
+    .letter-paragraph-box:hover {
+      box-shadow: 0 4px 24px #1976d22a;
+      border: 1.8px solid #1976d2;
+    }
+    /* === Next Button (v8 style) === */
+    .letter-next-btn-container {
+      position: absolute;
+      right: 18px;
+      bottom: -34px;
+      display: flex;
+      justify-content: flex-end;
+      width: 100%;
+      pointer-events: none;
+      z-index: 2;
+    }
+    .next-btn {
+      font-size: 1.12em;
+      padding: 8px 38px;
+      min-width: 130px;
+      border-radius: 32px;
+      background: #fff;
+      color: #000;
+      border: 2.6px solid #111;
+      box-sizing: border-box;
+      cursor: pointer;
+      transition: background 0.18s, color 0.18s, border 0.18s;
+      box-shadow: none;
+      margin-top: 0;
+      margin-bottom: 0;
+      display: inline-block;
+      pointer-events: auto;
+      font-family: inherit;
+    }
+    .next-btn:hover, .next-btn:focus {
+      background: #f4f7fc;
+      color: #1976d2;
+      border: 2.6px solid #1976d2;
+      outline: none;
+    }
+    /* Responsive for small screens */
+    @media (max-width: 600px) {
+      #overlay-message, #letter-content {
+        font-size: 1.1em;
+        padding: 16px 8px;
+      }
+      #envelope { width: 85vw; height: 140px; font-size: 1.1em;}
+      .letter-paragraph-box { padding: 16px 10px 36px 10px; }
+      .letter-next-btn-container { right: 4px;}
+      .next-btn { padding: 8px 16px; min-width: 90px; font-size: 1em;}
+    }
+    #bird-zoom-section {
+      position: absolute;
+      left: 0; top: 0; width: 100vw; height: 100vh;
+      background: #222;
+      z-index: 2;
+      display: flex; align-items: center; justify-content: center;
+      transition: background 1s;
+      overflow: hidden;
+    }
+    #bird-alone {
+      width: 180px;
+      height: 180px;
+      background: url('https://cdn.pixabay.com/photo/2016/03/31/19/56/bird-1298346_1280.png') no-repeat center/contain;
+      border-radius: 50%;
+      box-shadow: 0 0 40px #000a;
+      transition: transform 2s cubic-bezier(0.19,1,0.22,1);
+      position: relative;
+      z-index: 2;
+    }
+    #bird-zoom-section.zooming #bird-alone {
+      transform: scale(16);
+      transition: transform 2.2s cubic-bezier(0.19,1,0.22,1);
+    }
+    #envelope-section {
+      position: absolute;
+      left: 0; top: 0; width: 100vw; height: 100vh;
+      background: #232d36;
+      z-index: 4;
+      display: flex; align-items: center; justify-content: center;
+      flex-direction: column;
+      transition: background 1s;
+    }
+    #envelope {
+      width: 350px; height: 220px;
+      background: #fff;
+      border-radius: 16px;
+      box-shadow: 0 8px 24px #0006;
+      position: relative;
+      overflow: hidden;
+      cursor: pointer;
+      transition: box-shadow 0.3s;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.6em;
+      font-weight: bold;
+      color: #333;
+    }
+    #envelope-text {
+      position: absolute;
+      bottom: 20px; left: 0; width: 100%;
+      text-align: center;
+      font-size: 1em;
+      font-weight: normal;
+      color: #1976d2;
+    }
+    #envelope.opened {
+      animation: open-envelope 1s forwards;
+    }
+    @keyframes open-envelope {
+      0% { transform: scale(1) rotate(0deg); }
+      70% { transform: scale(1.08) rotate(-2deg);}
+      100% { transform: scale(0.97) rotate(0deg);}
+    }
+    #letter-content {
+      display: none;
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%,-50%);
+      width: 95vw; max-width: 550px; height: 70vh;
+      background: #fff;
+      border-radius: 26px;
+      box-shadow: 0 8px 32px #0008;
+      z-index: 10;
+      padding: 40px 24px;
+      font-size: 1.18em;
+      color: #232d36;
+      overflow-y: auto;
+      opacity: 0;
+      transition: opacity 1s;
+      white-space: pre-line;
+    }
+    #letter-content.visible { display:block; opacity: 1; }
+    #zoom-frame {
+      position: fixed;
+      left: 0; top: 0; right: 0; bottom: 0;
+      width: 100vw;
+      height: 100vh;
+      pointer-events: none;
+      z-index: 20;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+    #zoom-frame.visible { opacity: 1; }
+    #frame {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      border: 4px solid #fff;
+      box-sizing: border-box;
+      border-radius: 30px;
+      pointer-events: none;
+      z-index: 21;
+      opacity: 1;
+      background: transparent;
+      transform: translate(-50%, -50%) scale(1);
+      box-shadow: 0 0 0 1px #fff, 0 0 24px 2px #0008;
+      transition: opacity 0.3s;
+    }
+    #zoom-mask {
+      position: fixed;
+      left: 0; top: 0; right: 0; bottom: 0;
+      width: 100vw;
+      height: 100vh;
+      pointer-events: none;
+      z-index: 20;
+      opacity: 1;
+      background: rgba(0,0,0,1);
+      transition: opacity 0.3s;
+    }
+  </style>
+</head>
+<body>
+  <button id="start-btn">เริ่มต้น</button>
+  <div id="overlay-message"></div>
+  <div id="bird-zoom-section" class="hidden">
+    <div id="bird-alone"></div>
+  </div>
+  <div id="envelope-section" class="hidden">
+    <div id="envelope">
+      ถึง ม.3/1 ทุกคน
+      <div id="envelope-text">กดเพื่อเปิดจดหมาย</div>
+    </div>
+    <div id="letter-content"></div>
+  </div>
+  <div id="zoom-frame">
+    <canvas id="zoom-mask"></canvas>
+    <div id="frame"></div>
+  </div>
+  <script>
+    // Typewriter for overlay
+    function overlayTypewriter(msg, btnText, btnCallback, speed) {
+      const overlay = document.getElementById('overlay-message');
+      overlay.innerHTML = `<span id="overlay-type-span"></span>`;
+      overlay.classList.add('visible');
+      let i = 0;
+      function type() {
+        if(i <= msg.length) {
+          overlay.querySelector("#overlay-type-span").innerHTML = msg.slice(0, i++) + '<span style="opacity:0.55">|</span>';
+          setTimeout(type, speed);
+        } else {
+          overlay.querySelector("#overlay-type-span").innerHTML = msg;
+          if (btnText) {
+            const btn = document.createElement('button');
+            btn.className = 'story-btn';
+            btn.textContent = btnText;
+            btn.onclick = btnCallback;
+            overlay.appendChild(btn);
+          }
+        }
+      }
+      type();
+    }
+    function updateOverlayTypewriter(msg, btnText, btnCallback, speed) {
+      const overlay = document.getElementById('overlay-message');
+      overlay.innerHTML = `<span id="overlay-type-span"></span>`;
+      let i = 0;
+      function type() {
+        if(i <= msg.length) {
+          overlay.querySelector("#overlay-type-span").innerHTML = msg.slice(0, i++) + '<span style="opacity:0.55">|</span>';
+          setTimeout(type, speed);
+        } else {
+          overlay.querySelector("#overlay-type-span").innerHTML = msg;
+          if (btnText) {
+            const btn = document.createElement('button');
+            btn.className = 'story-btn';
+            btn.textContent = btnText;
+            btn.onclick = btnCallback;
+            overlay.appendChild(btn);
+          }
+        }
+      }
+      type();
+    }
+    function hideMessage() {
+      const overlay = document.getElementById('overlay-message');
+      overlay.classList.remove('visible');
+      setTimeout(()=>overlay.innerHTML='', 300);
+    }
+
+    // Step 1: เริ่มต้น
+    document.getElementById('start-btn').onclick = function() {
+      this.style.opacity = 0;
+      setTimeout(()=>this.classList.add('hidden'), 400);
+      setTimeout(()=>{
+        document.getElementById('bird-zoom-section').classList.remove('hidden');
+        overlayTypewriter(
+          'โอะ! เหมือนมีนกตัวนึงบินหลุดฝูงมาทางนี้นะ...........',
+          'แตะตรงนี้เพื่อไปต่อ......',
+          step2,
+          72
+        );
+      }, 300);
+    };
+    function step2() {
+      updateOverlayTypewriter(
+        'เอะ! ดูเหมือนที่ขามันเอาอะไรติดมาด้วยนะ??',
+        'แตะตรงนี้เพื่อไปต่อ......',
+        step3,
+        72
+      );
+    }
+    function step3() {
+      updateOverlayTypewriter(
+        'ลองเข้าไปดูใกล้ๆกันดีกว่า',
+        'แตะตรงนี้เพื่อไปต่อ......',
+        step4,
+        72
+      );
+    }
+    function step4() {
+      hideMessage();
+      setTimeout(()=>{ document.getElementById('bird-zoom-section').classList.add('zooming'); setTimeout(step5, 2200); }, 400);
+    }
+    function step5() {
+      document.getElementById('bird-zoom-section').classList.add('hidden');
+      startZoomFrameEffect(() => {
+        document.getElementById('envelope-section').classList.remove('hidden');
+        const envelope = document.getElementById('envelope');
+        const letter = document.getElementById('letter-content');
+        envelope.classList.remove('opened');
+        letter.classList.remove('visible');
+        envelope.style.display = '';
+        envelope.onclick = function() {
+          envelope.classList.add('opened');
+          setTimeout(()=>{
+            envelope.style.display = 'none';
+            letter.innerHTML = '';
+            letter.classList.add('visible');
+            revealLetter();
+          }, 800);
+        }
+      });
+    }
+    // Letter: v7 box, v8 next button, typewriter per paragraph
+    function revealLetter() {
+      const letter = document.getElementById('letter-content');
+      // ใช้ข้อความตามที่ผู้ใช้แก้ไข แบ่ง 5 กล่อง
+      const paragraphs = [
+        `ถ้าเราได้เห็นเว็ปไซต์นี้แปลว่าครูน่าจะกลับมหาลัยแล้ว ในวัน Gifted Fam ครูน่าพูดไปบ้างแล้ว แต่จริงๆ ครูยังมีเรื่องที่อยากพูดกับพวกเราอีกเยอะมาก มีอีกหลายเรื่องที่ครูยังไม่ได้เล่าให้ฟังเลย จริงๆ ครูอยากพูดเยอะกว่านี้ แต่ในวันนั้นครูพูดไม่ออก เพราะเพิ่งร้องไห้มาหลังจากที่ได้เห็นการแสดงของพวกเรา (ทุกคนเก่งมากกกกกกก)`,
+        `สำหรับช่วงเวลา 5 เดือนที่ครูได้อยู่ที่โรงเรียนนี้ ถึงจะไม่ค่อยได้สอนห้องเรา แต่การที่ได้เป็นครูประจำชั้นของห้องเราทำให้ครูมีความสุขมาก ขอบคุณพวกเราทุกคนตั้งแต่วันแรกจนถึงวันที่ต้องกลับมหาลัย ที่ทำให้ครูมีความสุขในการมาโรงเรียนในแต่ละวัน ช่วงเวลา 5 เดือน ไม่มีเลยซักวันที่พวกเราทำครูเสียใจ วันเดียวที่ครูเสียใจที่สุดคือวันที่ต้องกลับมหาลัย วันที่รู้ว่าจะไม่เจอพวกเราแล้ว พวกเราทำให้ครูอยากเป็นครูมากขึ้น จากตอนแรกที่แค่เลือกเป็นครูเพราะเพื่อนชวน แต่ตอนนี้ครูเข้าใจความสุขของการเป็นครูแล้ว และคนที่สอนครูเรื่องนี้คือพวกเราทุกคน การที่ได้เจอนักเรียนที่น่ารักแบบพวกเราเป็นห้องแรก ถือเป็นเรื่องที่โชคดีที่สุดของครูเรื่องหนึ่ง`,
+        `ถึงเทอมหน้าครูจะไม่ได้อยู่เป็นครูประจำชั้นแล้ว ก็เป็นเด็กดีของครูแกมแพรน้า ตั้งใจเรียนให้มากๆ มีความสุขให้เยอะกับเทอมสุดท้ายของ ม.ต้น ยิ้มบ่อยๆ กินข้าวเยอะๆ ร้องไห้น้อยๆ มีความสุขให้มากๆ อ่านหนังสืออย่าหักโหมมากน้า ค่อยๆอ่านดูแลสุขภาพตัวเองให้ดี พวกเราทุกคนทำได้อยู่แล้ว เต็มที่กับชีวิต สนุกกับมันให้มากๆ กับหนึ่งในช่วงชีวิตที่มีค่ามากที่สุดช่วงหนึ่ง ไว้เจอกันครั้งหน้า ครูจะมาถามว่าช่วงที่ครูไม่อยู่ไปทำอะไรมาบ้างให้ตัวเองมีความสุข ถือเป็นการบ้านชิ้นแรก ชิ้นเดียว และชิ้นสุดท้ายจากครู`,
+        `สุดท้ายแล้ว ขอให้เราทุกคนใช้ชีวิตให้สมกับวัยของตัวเอง ไม่ต้องตึงจนขาด หรือหลวมจนหย่อน ถ้าเหนื่อยก็แค่หยุดพักหายใจบ้าง ไม่ต้องฝืนจนตัวเองไม่มีความสุข ไม่ต้องทำทุกอย่างเพื่อให้คนทั้งโลกชื่นชมแค่ภูมิใจในตัวเองให้มากๆที่ผ่านทุกอย่างมาได้จนถึงวันนี้แค่นั้นก็พอแล้ว ไม่มีใครในโลกนี้สมบูรณ์แบบหรอก แพ้บ้างก็ดี ผิดหวังบ้างก็ได้ แต่อย่าลืมให้กำลังใจตัวเองด้วยน้า เพราะคนที่จะอยู่กับเราไปตลอดชีวิต คือคนที่ทุกครั้งเราส่องกระจกแล้วจะเห็นคนคนนั้นเสมอ ขอให้ทุกคนมีความสุขกับทางของตัวเอง เมื่อไหร่ที่ไม่มีใครเชื่อในตัวพวกหนู ข้างหลังยังมีครูเสมอที่เชื่อมั่นกับทางข้างหน้าของพวกเราเสมอ มีปัญหาเมื่อไหร่ก็ทักมาปรึกษาครูได้เสมอน้าาาาา`,
+        `ขอบคุณพวกเราอีกครั้งสำหรับหนึ่งในช่วงเวลาที่มีค่ามากที่สุดสำหรับครู อย่าลืมคิดถึงกันน้าาา
+เว็ปไซต์นี้อาจจะดูรีบทำไปบ้าง แต่ในทุกข้อความที่เราได้อ่านคือข้อความที่ครูอยากจะบอกพวกเราทุกคนจริงๆ ถ้าผิดพลาดตรงไหนก็ขอโทษพวกเราด้วยน้าาาาาา
+ปล. ครูมีของขวัญอีกชิ้นหนึ่งให้พวกเราด้วยนะ ครูฝากไว้ที่ครูแกมแพรน้าาาาา `
+      ];
+
+      letter.innerHTML = "";
+      let idx = 0;
+
+      function typeWriterToDiv(div, text, cb) {
+        let i = 0;
+        function type() {
+          if (i <= text.length) {
+            div.innerHTML = text.slice(0, i) + '<span style="opacity:0.55">|</span>';
+            i++;
+            setTimeout(type, 28);
+          } else {
+            div.innerHTML = text;
+            if(cb) cb();
+          }
+        }
+        type();
+      }
+
+      function showParagraph(i) {
+        if (i >= paragraphs.length) return;
+        // Box v7
+        const paraDiv = document.createElement('div');
+        paraDiv.className = 'letter-paragraph-box';
+        paraDiv.style.opacity = 0;
+        paraDiv.innerHTML = '';
+        paraDiv.style.display = "inline-block";
+        paraDiv.style.position = "relative";
+        paraDiv.style.marginBottom = "2.5em";
+        letter.appendChild(paraDiv);
+        setTimeout(() => paraDiv.style.opacity = 1, 40);
+
+        typeWriterToDiv(paraDiv, paragraphs[i].trim(), function() {
+          // ถ้ายังเหลือวรรค ให้มีปุ่มถัดไป (v8 style)
+          if (i < paragraphs.length - 1) {
+            const btnContainer = document.createElement('div');
+            btnContainer.className = 'letter-next-btn-container';
+            const btn = document.createElement('button');
+            btn.className = 'next-btn';
+            btn.textContent = "ถัดไป";
+            btn.onclick = function() {
+              btn.disabled = true;
+              showParagraph(i + 1);
+              btnContainer.remove();
+            };
+            btnContainer.appendChild(btn);
+            paraDiv.appendChild(btnContainer);
+          }
+        });
+      }
+
+      showParagraph(0);
+    }
+
+    // Frame Zoom Effect
+    function startZoomFrameEffect(onDone) {
+      const zoomFrame = document.getElementById('zoom-frame');
+      const frame = document.getElementById('frame');
+      const mask = document.getElementById('zoom-mask');
+      let w = window.innerWidth * 0.99;
+      let h = window.innerHeight * 0.99;
+      const minW = Math.max(window.innerWidth * 0.24, 180);
+      const minH = Math.max(window.innerHeight * 0.20, 120);
+      function resizeMask() {
+        mask.width = window.innerWidth;
+        mask.height = window.innerHeight;
+      }
+      resizeMask();
+      window.addEventListener('resize', resizeMask);
+      function drawMask(w, h) {
+        const ctx = mask.getContext('2d');
+        ctx.clearRect(0, 0, mask.width, mask.height);
+        ctx.fillStyle = "rgba(0,0,0,1)";
+        ctx.fillRect(0, 0, mask.width, mask.height);
+        ctx.save();
+        ctx.globalCompositeOperation = 'destination-out';
+        ctx.beginPath();
+        const cx = mask.width / 2, cy = mask.height / 2;
+        const rx = w / 2, ry = h / 2;
+        ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+      zoomFrame.classList.add('visible');
+      frame.style.opacity = 1;
+      frame.style.width = w + 'px';
+      frame.style.height = h + 'px';
+      frame.style.left = '50%';
+      frame.style.top = '50%';
+      frame.style.transform = 'translate(-50%, -50%) scale(1)';
+      drawMask(w, h);
+      function animateZoom() {
+        if (w > minW && h > minH) {
+          w *= 0.98;
+          h *= 0.98;
+          frame.style.width = w + 'px';
+          frame.style.height = h + 'px';
+          drawMask(w, h);
+          requestAnimationFrame(animateZoom);
+        } else {
+          setTimeout(() => {
+            frame.style.opacity = 0;
+            zoomFrame.classList.remove('visible');
+            drawMask(0,0);
+            if(onDone) onDone();
+          }, 550);
+        }
+      }
+      animateZoom();
+    }
+    // เริ่มต้น: ซ่อนทุกอย่างยกเว้นปุ่มเริ่มต้น
+    document.getElementById('start-btn').classList.remove('hidden');
+    document.getElementById('overlay-message').classList.remove('visible');
+    document.getElementById('bird-zoom-section').classList.add('hidden');
+    document.getElementById('envelope-section').classList.add('hidden');
+    document.getElementById('zoom-frame').classList.remove('visible');
+  </script>
+</body>
+</html>
